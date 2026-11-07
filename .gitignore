@@ -1,7 +1,12 @@
 .env
 .env.*
 !.env.example
+**/__pycache__/
+*.pyc
 .venv/
-__pycache__/
+backend/.venv/
 .pytest_cache/
 .DS_Store
+dist/
+build/
+

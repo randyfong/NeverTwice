@@ -85,8 +85,9 @@ async def meta_worker_swarm(
     Executes Worker A (Patch), Worker B (Happy Tests), and Worker C (Adversarial Tests)
     concurrently via asyncio.gather.
     """
-    # Deterministic fallback check for pitch reliability / missing connection
-    use_fallback = not settings.META_API_KEY or "LLM_1396506002698339" not in settings.META_API_KEY
+    # Check if Meta API Key is configured
+    use_fallback = not settings.META_API_KEY
+
 
     # Worker A: Patch
     worker_a_prompt = (

@@ -171,7 +171,8 @@ def process_cart_payment(cart_id: str, amount: float, idempotency_key: str = Non
         dry_run: false,
       };
 
-      const res = await fetch('http://127.0.0.1:8000/api/run-pipeline', {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/run-pipeline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
