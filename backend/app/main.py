@@ -6,7 +6,9 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from backend.app.config import settings
 from backend.app.schemas import (
@@ -196,3 +198,23 @@ async def stream_nevertwice_pipeline(req: PipelineRunRequest):
         yield f"data: {json.dumps({'event': 'PIPELINE_COMPLETE', 'result': final_payload})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# Static Frontend Serving for Unified Container Deployment
+STATIC_DIST_PATH = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+if STATIC_DIST_PATH.exists() and (STATIC_DIST_PATH / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIST_PATH / "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Don't intercept API or docs routes
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        file_candidate = STATIC_DIST_PATH / full_path
+        if full_path and file_candidate.exists() and file_candidate.is_file():
+            return FileResponse(file_candidate)
+
+        return FileResponse(STATIC_DIST_PATH / "index.html")
+

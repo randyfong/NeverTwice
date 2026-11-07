@@ -52,6 +52,13 @@ python3 backend/simulate_pr_agent.py
 
 ## Register with Fetch.ai Agentverse
 
+Deployed UI: https://nevertwice-777537491035.us-west1.run.app
+
+For Cloud Run, set `FETCHAI_AGENT_ENDPOINT=https://nevertwice-777537491035.us-west1.run.app/submit`.
+The public `/submit` route forwards POST messages and HEAD readiness probes to
+the internal uAgent on port 8001. Redeploy after adding this route. Set
+`APP_ENV=production` in Cloud Run environment variables.
+
 The uAgent supports both `NeverTwicePreMergeProtocol` and the standard Agent
 Chat Protocol used by ASI:One. Keep the backend running while it is registered.
 
