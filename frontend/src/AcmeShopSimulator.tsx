@@ -170,6 +170,14 @@ DuplicateChargeException: CRITICAL: Rapid duplicate checkout dispatched without 
             <p className="text-xs text-slate-400">
               Live e-commerce checkout simulating the race condition bug
             </p>
+            <a
+              href="https://acmeshop-358476980823.us-west1.run.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+            >
+              Open AcmeShop
+            </a>
           </div>
         </div>
 

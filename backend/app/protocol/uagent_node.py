@@ -45,7 +45,7 @@ class VerifyCodeResponse(Model):
 # ---------------------------------------------------------
 AGENT_SEED = settings.FETCHAI_AGENT_SEED or "nevertwice_verifying_referee_seed_phrase_2026"
 AGENT_PORT = settings.FETCHAI_AGENT_PORT or 8001
-AGENT_ENDPOINT = f"http://127.0.0.1:{AGENT_PORT}/submit"
+AGENT_ENDPOINT = settings.FETCHAI_AGENT_ENDPOINT or f"http://127.0.0.1:{AGENT_PORT}/submit"
 
 nevertwice_agent = Agent(
     name=settings.FETCHAI_AGENT_NAME or "nevertwice_premerge_referee",
@@ -120,3 +120,64 @@ async def handle_premerge_request(ctx: Context, sender: str, msg: VerifyCodeRequ
 
 
 nevertwice_agent.include(nevertwice_protocol)
+
+# Standard Agent Chat Protocol enables Agentverse / ASI:One conversations.
+import json
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement, ChatMessage, EndSessionContent, TextContent,
+    chat_protocol_spec,
+)
+
+chat_protocol = Protocol(spec=chat_protocol_spec)
+
+
+@chat_protocol.on_message(model=ChatMessage)
+async def handle_chat(ctx: Context, sender: str, msg: ChatMessage):
+    await ctx.send(sender, ChatAcknowledgement(acknowledged_msg_id=msg.msg_id))
+    text = "\n".join(item.text for item in msg.content if isinstance(item, TextContent))
+    if not text.strip():
+        return
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        reply = (
+            "NeverTwice analyzes crash logs, generates candidate patches and tests, "
+            "and returns a pre-merge verdict with failure memory. "
+            'To run an analysis, send a JSON object: {"raw_crash_log": "your traceback", '
+            '"enable_memory": true, "domain": "code"}. '
+            "Results depend on configured model and database services; "
+            "unconfigured services may use demo fallbacks."
+        )
+    else:
+        try:
+            from backend.app.main import execute_nevertwice_pipeline
+            from backend.app.schemas import PipelineRunRequest
+
+            if not isinstance(payload, dict) or not isinstance(payload.get("raw_crash_log"), str) or not payload["raw_crash_log"].strip():
+                raise ValueError("Provide a nonempty raw_crash_log string.")
+            request = PipelineRunRequest(
+                raw_crash_log=payload["raw_crash_log"],
+                enable_memory=payload.get("enable_memory", True),
+                domain=payload.get("domain", "code"),
+                dry_run=False,
+            )
+            result = await execute_nevertwice_pipeline(request)
+            reply = json.dumps({
+                "run_id": result.run_id,
+                "verdict": result.verdict.model_dump(mode="json"),
+                "note": "Configured services may use demo fallbacks; this is not a production safety certification.",
+            })
+        except (ValueError, TypeError):
+            reply = "Invalid request. Provide a nonempty raw_crash_log string and valid enable_memory/domain fields."
+        except Exception:
+            ctx.logger.exception("Chat verification failed")
+            reply = "Verification failed. No merge approval was issued. Please retry later."
+    await ctx.send(sender, ChatMessage(content=[TextContent(text=reply), EndSessionContent()]))
+
+
+@chat_protocol.on_message(model=ChatAcknowledgement)
+async def handle_chat_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
+    pass
+
+
+nevertwice_agent.include(chat_protocol)

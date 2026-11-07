@@ -50,3 +50,42 @@ Simulate an external coding bot querying the referee:
 python3 backend/simulate_pr_agent.py
 ```
 
+## Register with Fetch.ai Agentverse
+
+The uAgent supports both `NeverTwicePreMergeProtocol` and the standard Agent
+Chat Protocol used by ASI:One. Keep the backend running while it is registered.
+
+1. Set a private, stable `FETCHAI_AGENT_SEED` in `backend/.env` (or root `.env`).
+   Keep it secret: changing it changes the agent address. Root `.env` takes
+   precedence over `backend/.env`; environment variables override both.
+2. Start the backend without resetting memory:
+   `backend/.venv/bin/uvicorn backend.app.main:app --port 8000`.
+3. Forward a public HTTPS URL to **port 8001**, using your hosting provider or
+   an HTTPS tunnel. Set `FETCHAI_AGENT_ENDPOINT=https://YOUR-HOST/submit` in
+   your environment file, then restart the backend. Port 8000 serves the app API;
+   Agentverse needs the separate uAgent endpoint on port 8001.
+4. Create an API key in your [Agentverse account](https://agentverse.ai) and set
+   `AGENTVERSE_API_KEY` locally. Do not paste the key or seed into chat.
+5. Preview the identity and endpoint, then submit:
+
+   ```bash
+   backend/.venv/bin/python -m backend.register_agentverse
+   backend/.venv/bin/python -m backend.register_agentverse --register
+   ```
+
+Alternatively, use **Agents → Launch an Agent → External Integration → uAgents**
+in Agentverse and enter the same public endpoint. Follow the
+[official onboarding guide](https://docs.agentverse.ai/documentation/launch-agents/agentverse-sdk/u-agents)
+to evaluate registration and view the profile. Suggested keywords: code review,
+pre-merge verification, crash analysis, regression prevention.
+
+Chat accepts a JSON object, for example:
+
+```json
+{"raw_crash_log":"Traceback: DuplicateChargeException in process_cart_payment", "enable_memory":true, "domain":"code"}
+```
+
+Other text returns usage instructions. Pipeline services can use demo fallbacks
+when unconfigured; a returned verdict is not a production safety certification.
+Temporary tunnel URLs change when restarted and require updating registration.
+

@@ -1,10 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
+from pathlib import Path
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(Path(__file__).resolve().parents[1] / ".env", Path(__file__).resolve().parents[2] / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -41,7 +42,9 @@ class Settings(BaseSettings):
     FETCHAI_AGENT_NAME: str = "nevertwice_pipeline_agent"
     FETCHAI_AGENT_SEED: str = "nevertwice_default_seed_phrase"
     FETCHAI_AGENT_PORT: int = 8001
+    FETCHAI_AGENT_ENDPOINT: str = ""
     FETCHAI_MAILBOX_KEY: str = ""
+    AGENTVERSE_API_KEY: str = ""
 
 
 settings = Settings()
