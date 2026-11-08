@@ -18,7 +18,69 @@ _trajectories_collection = None
 
 # In-memory storage fallback for local/offline testing
 _in_memory_cards: dict[str, dict[str, Any]] = {}
-_in_memory_trajectories: list[dict[str, Any]] = []
+_in_memory_trajectories: list[dict[str, Any]] = {} if False else []
+
+
+def clear_memory_state(reset_all_rules: bool = True) -> dict[str, Any]:
+    """
+    Clears recorded trajectories and stored rules in MongoDB (and in-memory fallback)
+    so the demo can restart completely cleanly.
+    """
+    global _in_memory_cards, _in_memory_trajectories
+    _in_memory_cards.clear()
+    _in_memory_trajectories.clear()
+
+    db = get_mongo_db()
+    deleted_trajectories = 0
+    deleted_rules = 0
+
+    if db is not None:
+        try:
+            res_traj = db["run_trajectories"].delete_many({})
+            deleted_trajectories = res_traj.deleted_count
+        except Exception as e:
+            logger.warning(f"[Mongo Atlas] Clear trajectories failed: {e}")
+
+        try:
+            # Delete all stored skill rules in MongoDB to reset episodic memory completely
+            res_rule = db["skill_cards"].delete_many({}) if reset_all_rules else db["skill_cards"].delete_one({"id": "RULE-PAY-042"})
+            deleted_rules = res_rule.deleted_count
+        except Exception as e:
+            logger.warning(f"[Mongo Atlas] Clear rules failed: {e}")
+
+    return {
+        "status": "reset_complete",
+        "cleared_mongo": db is not None,
+        "deleted_trajectories": deleted_trajectories,
+        "deleted_rules": deleted_rules,
+    }
+
+
+def get_demo_state() -> dict[str, Any]:
+    """Retrieves current recorded trajectories and active rules from MongoDB or in-memory fallback."""
+    db = get_mongo_db()
+    trajectories = []
+    rules = []
+
+    if db is not None:
+        try:
+            trajectories = list(db["run_trajectories"].find({}, {"_id": 0}).sort("timestamp", -1).limit(20))
+        except Exception as e:
+            logger.warning(f"[Mongo Atlas] Fetch trajectories failed: {e}")
+        try:
+            rules = list(db["skill_cards"].find({}, {"_id": 0, "embedding": 0}).limit(20))
+        except Exception as e:
+            logger.warning(f"[Mongo Atlas] Fetch rules failed: {e}")
+    else:
+        trajectories = list(reversed(_in_memory_trajectories))[:20]
+        rules = [{k: v for k, v in card.items() if k != "embedding"} for card in _in_memory_cards.values()][:20]
+
+    return {
+        "trajectories": trajectories,
+        "rules": rules,
+        "total_trajectories": len(trajectories),
+        "total_rules": len(rules),
+    }
 
 
 def get_mongo_db():

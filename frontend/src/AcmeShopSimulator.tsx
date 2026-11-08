@@ -23,9 +23,10 @@ interface Transaction {
 
 interface AcmeShopSimulatorProps {
   onSendToNeverTwice: (crashLog: string) => void;
+  activeRulesCount?: number;
 }
 
-export default function AcmeShopSimulator({ onSendToNeverTwice }: AcmeShopSimulatorProps) {
+export default function AcmeShopSimulator({ onSendToNeverTwice, activeRulesCount = 0 }: AcmeShopSimulatorProps) {
   const [bankBalance, setBankBalance] = useState<number>(500.0);
   const [patchMode, setPatchMode] = useState<'naive' | 'protected'>('naive');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -204,6 +205,11 @@ DuplicateChargeException: CRITICAL: Rapid duplicate checkout dispatched without 
           >
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
             Mode B: NeverTwice Patch (Protected)
+            {activeRulesCount > 0 && (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono ml-1">
+                {activeRulesCount} rule active
+              </span>
+            )}
           </button>
         </div>
       </div>

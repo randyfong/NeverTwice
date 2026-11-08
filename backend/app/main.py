@@ -20,6 +20,8 @@ from backend.app.pipeline.memory_engine import (
     fetch_matching_rule_cards,
     create_and_store_skill_card,
     save_run_trajectory,
+    clear_memory_state,
+    get_demo_state,
 )
 from backend.app.pipeline.builder_swarm import meta_worker_swarm
 from backend.app.pipeline.sandbox_runner import run_in_sandbox
@@ -70,6 +72,19 @@ async def health_check():
             "embedding": settings.GEMINI_EMBEDDING_MODEL,
         },
     }
+
+
+@app.post("/api/reset-demo")
+async def reset_demo_endpoint():
+    """Resets memory state (MongoDB Atlas & in-memory caches) to cold start."""
+    result = clear_memory_state()
+    return result
+
+
+@app.get("/api/demo-state")
+async def get_demo_state_endpoint():
+    """Returns currently recorded trajectories and rules in storage."""
+    return get_demo_state()
 
 
 @app.post("/api/run-pipeline", response_model=PipelineRunResponse)

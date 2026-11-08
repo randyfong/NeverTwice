@@ -16,6 +16,22 @@ async def test_health_endpoint():
 
 
 @pytest.mark.asyncio
+async def test_reset_demo_endpoint():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.post("/api/reset-demo")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "reset_complete"
+
+        res_state = await client.get("/api/demo-state")
+        assert res_state.status_code == 200
+        state = res_state.json()
+        assert state["total_trajectories"] == 0
+        assert state["total_rules"] == 0
+
+
+@pytest.mark.asyncio
 async def test_end_to_end_pipeline_transition():
     """
     Validates the Golden Path:
