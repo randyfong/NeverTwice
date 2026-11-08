@@ -451,7 +451,7 @@ CRITICAL: Rapid duplicate checkout dispatched without idempotency lock`;
                     }`}
                 >
                   <span className="h-2 w-2 rounded-full bg-rose-500" />
-                  Run 1: Cold Start ({run1Data.verdict.verdict_status})
+                  Run 1: Cold Start {run1Data ? `(${run1Data.verdict.verdict_status})` : ''}
                 </button>
                 <button
                   onClick={() => setActiveTabRun('run2')}
@@ -461,88 +461,104 @@ CRITICAL: Rapid duplicate checkout dispatched without idempotency lock`;
                     }`}
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  Run 2: Warm Memory ({run2Data.verdict.verdict_status})
+                  Run 2: Warm Memory {run2Data ? `(${run2Data.verdict.verdict_status})` : ''}
                 </button>
               </div>
             </div>
 
             {/* Selected Run Details */}
             {activeTabRun === 'run1' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-cyan-400">{run1Data.run_id}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-mono border border-rose-500/20">
-                      Safety: {run1Data.verdict.safety_score}%
-                    </span>
+              run1Data ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-cyan-400">{run1Data.run_id}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-mono border border-rose-500/20">
+                        Safety: {run1Data.verdict.safety_score}%
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-300 space-y-1">
+                      <div><strong>Target:</strong> <code className="text-cyan-300">{run1Data.contract.target_function}()</code></div>
+                      <div><strong>Contract:</strong> {run1Data.contract.contract_id}</div>
+                      <div><strong>Active Rules Used:</strong> {run1Data.active_rules_used.length} (Cold start)</div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-800">
+                      <div className="text-[11px] font-mono text-slate-400 mb-1">Execution Trace:</div>
+                      <pre className="text-[10px] font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-rose-300 overflow-auto max-h-32">
+                        {run1Data.execution_trace.stdout}
+                      </pre>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-300 space-y-1">
-                    <div><strong>Target:</strong> <code className="text-cyan-300">{run1Data.contract.target_function}()</code></div>
-                    <div><strong>Contract:</strong> {run1Data.contract.contract_id}</div>
-                    <div><strong>Active Rules Used:</strong> {run1Data.active_rules_used.length} (Cold start)</div>
-                  </div>
-                  <div className="pt-2 border-t border-slate-800">
-                    <div className="text-[11px] font-mono text-slate-400 mb-1">Execution Trace:</div>
-                    <pre className="text-[10px] font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-rose-300 overflow-auto max-h-32">
-                      {run1Data.execution_trace.stdout}
-                    </pre>
-                  </div>
-                </div>
 
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <div className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
-                    <ShieldAlert className="h-4 w-4" /> Judge Evaluation:
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+                      <ShieldAlert className="h-4 w-4" /> Judge Evaluation:
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">{run1Data.verdict.reasoning}</p>
+                    {run1Data.verdict.critical_vulnerability && (
+                      <div className="p-2.5 rounded bg-rose-950/40 border border-rose-900/50 text-xs text-rose-300">
+                        <strong>Critical Exploit: </strong>{run1Data.verdict.critical_vulnerability}
+                      </div>
+                    )}
+                    {run1Data.new_rule_card && (
+                      <div className="p-2.5 rounded bg-indigo-950/30 border border-indigo-800/40 text-xs text-indigo-300">
+                        <strong>Consolidated Rule: </strong>{run1Data.new_rule_card.id} — {run1Data.new_rule_card.title}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{run1Data.verdict.reasoning}</p>
-                  {run1Data.verdict.critical_vulnerability && (
-                    <div className="p-2.5 rounded bg-rose-950/40 border border-rose-900/50 text-xs text-rose-300">
-                      <strong>Critical Exploit: </strong>{run1Data.verdict.critical_vulnerability}
-                    </div>
-                  )}
-                  {run1Data.new_rule_card && (
-                    <div className="p-2.5 rounded bg-indigo-950/30 border border-indigo-800/40 text-xs text-indigo-300">
-                      <strong>Consolidated Rule: </strong>{run1Data.new_rule_card.id} — {run1Data.new_rule_card.title}
-                    </div>
-                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-slate-500 text-xs space-y-2">
+                  <Play className="h-6 w-6 text-slate-600 mb-1" />
+                  <p className="font-medium text-slate-400">Run 1 Not Executed Yet</p>
+                  <p className="text-[11px]">Click "Simulate Run 1: Cold Start" above to execute.</p>
+                </div>
+              )
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-cyan-400">{run2Data.run_id}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/20">
-                      Safety: {run2Data.verdict.safety_score}%
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-300 space-y-1">
-                    <div><strong>Target:</strong> <code className="text-cyan-300">{run2Data.contract.target_function}()</code></div>
-                    <div><strong>Contract:</strong> {run2Data.contract.contract_id}</div>
-                    <div className="text-emerald-400 font-semibold">
-                      <strong>Retrieved Rule:</strong> {run2Data.active_rules_used[0]?.id || 'RULE-PAY-042'}
+              run2Data ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-cyan-400">{run2Data.run_id}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/20">
+                        Safety: {run2Data.verdict.safety_score}%
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-300 space-y-1">
+                      <div><strong>Target:</strong> <code className="text-cyan-300">{run2Data.contract.target_function}()</code></div>
+                      <div><strong>Contract:</strong> {run2Data.contract.contract_id}</div>
+                      <div className="text-emerald-400 font-semibold">
+                        <strong>Retrieved Rule:</strong> {run2Data.active_rules_used[0]?.id || 'RULE-PAY-042'}
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-800">
+                      <div className="text-[11px] font-mono text-slate-400 mb-1">Execution Trace:</div>
+                      <pre className="text-[10px] font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-emerald-300 overflow-auto max-h-32">
+                        {run2Data.execution_trace.stdout}
+                      </pre>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-slate-800">
-                    <div className="text-[11px] font-mono text-slate-400 mb-1">Execution Trace:</div>
-                    <pre className="text-[10px] font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-emerald-300 overflow-auto max-h-32">
-                      {run2Data.execution_trace.stdout}
-                    </pre>
-                  </div>
-                </div>
 
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4" /> Judge Evaluation:
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{run2Data.verdict.reasoning}</p>
-                  <div className="p-2.5 rounded bg-emerald-950/40 border border-emerald-900/50 text-xs text-emerald-300">
-                    <strong>Verdict: </strong>Verified merge-ready without vulnerabilities.
-                  </div>
-                  <div className="text-[10px] font-mono text-slate-400">
-                    Fetch.ai Signature: <span className="text-indigo-400">{run2Data.verdict_signature}</span>
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                      <ShieldCheck className="h-4 w-4" /> Judge Evaluation:
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">{run2Data.verdict.reasoning}</p>
+                    <div className="p-2.5 rounded bg-emerald-950/40 border border-emerald-900/50 text-xs text-emerald-300">
+                      <strong>Verdict: </strong>Verified merge-ready without vulnerabilities.
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      Fetch.ai Signature: <span className="text-indigo-400">{run2Data.verdict_signature}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-slate-500 text-xs space-y-2">
+                  <Sparkles className="h-6 w-6 text-slate-600 mb-1" />
+                  <p className="font-medium text-slate-400">Run 2 Not Executed Yet</p>
+                  <p className="text-[11px]">Click "Trigger Run 2" above to verify memory recall.</p>
+                </div>
+              )
             )}
           </div>
         ) : (
